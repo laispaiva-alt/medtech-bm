@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
 CREATE TABLE IF NOT EXISTS unidades (
   id SERIAL PRIMARY KEY,
   nome VARCHAR(100) NOT NULL,
+  bairro VARCHAR(100) NOT NULL,
   endereco VARCHAR(200) NOT NULL
 );
 
@@ -28,10 +29,10 @@ CREATE TABLE IF NOT EXISTS agendamentos (
   criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Inserção inicial de unidades
-INSERT INTO unidades (nome, endereco) VALUES
-('UBS Centro - Barra Mansa', 'Rua Luis Ponce, nº 263 - Centro'),
-('UBS Ano Bom', 'Rua Presidente Kennedy, s/n - Ano Bom'),
-('UBS Vila Maria', 'Av. Antonio Silva, s/n - Vila Maria'),
-('UPA 24h - Barra Mansa', 'Rua Prefeito João Chiesse Filho, s/n - Centro')
+-- Inserção inicial de unidades com o campo bairro
+INSERT INTO unidades (nome, bairro, endereco) VALUES
+('UBS Centro - Barra Mansa', 'Centro', 'Rua Luis Ponce, nº 263 - Centro'),
+('UBS Ano Bom', 'Ano Bom', 'Rua Presidente Kennedy, s/n - Ano Bom'),
+('UBS Vila Maria', 'Vila Maria', 'Av. Antonio Silva, s/n - Vila Maria'),
+('UPA 24h - Barra Mansa', 'Centro', 'Rua Prefeito João Chiesse Filho, s/n - Centro')
 ON CONFLICT DO NOTHING;
