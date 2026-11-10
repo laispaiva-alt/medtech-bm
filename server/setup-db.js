@@ -8,16 +8,16 @@ const pool = new Pool({
   ssl: { rejectUnauthorized: false }
 });
 
-async function rodarSetup() {
+async function runSetup() {
   try {
     const sql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
     await pool.query(sql);
-    console.log('✅ Tabelas e dados iniciais criados com sucesso no banco Neon!');
+    console.log('Banco de dados PostgreSQL configurado com sucesso!');
   } catch (err) {
-    console.error('❌ Erro ao executar o setup no Neon:', err.message);
+    console.error('Erro ao executar o setup do banco:', err);
   } finally {
     await pool.end();
   }
 }
 
-rodarSetup();
+runSetup();
