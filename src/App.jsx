@@ -25,7 +25,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState('home');
   const [userRole, setUserRole] = useState('cidadao'); // 'cidadao' | 'posto'
   
-  // Login States (Iniciam limpos - sem auto-login da Maria da Silva)
+  // Login States (Iniciam vazios para bloquear login automático)
   const [loginMethod, setLoginMethod] = useState('traditional'); // 'traditional' | 'gov'
   const [govStep, setGovStep] = useState(1);
   const [cpf, setCpf] = useState('');
@@ -51,7 +51,7 @@ export default function App() {
   // Abas do Posto: 'gestao-agendamentos' | 'enviar-laudos'
   const [activeTabPosto, setActiveTabPosto] = useState('gestao-agendamentos');
 
-  // Estado dos Agendamentos (Inicia com lista dinâmica)
+  // Estado dos Agendamentos
   const [agendamentos, setAgendamentos] = useState([]);
 
   // Formulário de Agendamento do Cidadão
@@ -62,7 +62,7 @@ export default function App() {
     data: '2026-11-20'
   });
 
-  // Mensagens do Chat (Protótipo 4)
+  // Mensagens do Chat
   const [mensagens, setMensagens] = useState([
     {
       id: 1,
@@ -73,7 +73,7 @@ export default function App() {
 
   const [novaMensagem, setNovaMensagem] = useState('');
 
-  // Exames do Cidadão (Protótipo 3)
+  // Exames do Cidadão
   const exames = [
     {
       id: 1,
@@ -108,14 +108,14 @@ export default function App() {
     'Reginalda', 'Paraíso', 'São Luiz', 'Sirenio', 'Vila Maria'
   ];
 
-  // Ação de Login Corrigida (Exige preenchimento de campos)
+  // Validação estrita no Login
   const handleLogin = (e) => {
     if (e) e.preventDefault();
     setErroLogin('');
 
     if (userRole === 'cidadao') {
       if (!cpf.trim() || !password.trim()) {
-        setErroLogin('Por favor, informe seu CPF e senha de acesso.');
+        setErroLogin('Preencha seu CPF e senha de acesso para entrar.');
         return;
       }
       if (!userName.trim()) {
@@ -132,6 +132,11 @@ export default function App() {
   const handleCadastro = (e) => {
     e.preventDefault();
     setErroLogin('');
+
+    if (!formCadastro.nome.trim() || !formCadastro.cpf.trim() || !formCadastro.senha.trim()) {
+      setErroLogin('Preencha todos os campos obrigatórios do cadastro.');
+      return;
+    }
 
     if (formCadastro.senha !== formCadastro.confirmarSenha) {
       alert('As senhas digitadas não coincidem.');
@@ -230,15 +235,12 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col">
-      {/* ========================================================= */}
-      {/* 1. TELA HOME (ESCURA - IDENTIDADE MEDTECH BM)              */}
-      {/* ========================================================= */}
+      {/* 1. TELA HOME */}
       {currentView === 'home' && (
         <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-900 text-white relative overflow-hidden">
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
           
           <div className="z-10 flex flex-col items-center text-center max-w-3xl w-full">
-            {/* Logo Estetoscópio M (Azul e Verde) */}
             <div className="flex items-center justify-center mb-4">
               <div className="relative flex items-center justify-center w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 shadow-2xl">
                 <svg className="w-12 h-12" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -263,9 +265,7 @@ export default function App() {
               COMO DESEJA ACESSAR O SISTEMA?
             </h2>
 
-            {/* Cards de Seleção de Perfil */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
-              {/* Card Cidadão */}
               <div 
                 onClick={() => {
                   setUserRole('cidadao');
@@ -288,7 +288,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Card Posto de Saúde */}
               <div 
                 onClick={() => {
                   setUserRole('posto');
@@ -315,12 +314,9 @@ export default function App() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* 2. TELA DE LOGIN (FIEL AO PROTÓTIPO 1)                     */}
-      {/* ========================================================= */}
+      {/* 2. TELA DE LOGIN */}
       {currentView === 'login' && (
         <div className="flex-1 bg-slate-100 flex flex-col">
-          {/* Header Superior Azul (Protótipo 1) */}
           <header className="bg-[#005BAE] text-white px-8 py-4 flex items-center justify-between shadow-md">
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold tracking-tight">
@@ -396,7 +392,6 @@ export default function App() {
                     />
                   </div>
 
-                  {/* Caixa de Conformidade LGPD (Fiel ao Protótipo 1) */}
                   <div className="bg-[#EBF9F1] border border-emerald-200/60 rounded-xl p-3.5 text-xs text-[#1E7E34] flex items-start gap-2.5">
                     <Lock className="w-4 h-4 text-[#28A745] shrink-0 mt-0.5" />
                     <span className="leading-relaxed">
@@ -404,7 +399,6 @@ export default function App() {
                     </span>
                   </div>
 
-                  {/* Botão Entrar no Sistema */}
                   <button
                     type="submit"
                     className={`w-full py-3.5 ${userRole === 'cidadao' ? 'bg-[#005BAE] hover:bg-blue-700' : 'bg-[#28A745] hover:bg-emerald-700'} text-white font-bold rounded-xl text-sm tracking-wide transition-colors shadow-sm uppercase`}
@@ -434,7 +428,6 @@ export default function App() {
                 )}
               </div>
             ) : (
-              /* SIMULAÇÃO GOV.BR EM 2 ETAPAS */
               <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
                 <div className="bg-[#1351B4] p-5 text-white flex items-center justify-between">
                   <span className="text-2xl font-black tracking-tight">gov.br</span>
@@ -478,7 +471,13 @@ export default function App() {
 
                       <button
                         type="button"
-                        onClick={() => setGovStep(2)}
+                        onClick={() => {
+                          if (!cpf.trim() || !userName.trim()) {
+                            alert('Informe seu nome e CPF antes de continuar.');
+                            return;
+                          }
+                          setGovStep(2);
+                        }}
                         className="w-full py-3 bg-[#1351B4] hover:bg-blue-800 text-white font-bold rounded-lg text-sm transition-colors"
                       >
                         Continuar
@@ -487,7 +486,7 @@ export default function App() {
                   ) : (
                     <div className="space-y-4">
                       <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-600">
-                        Entrando como: <strong className="text-slate-900">{userName || 'Cidadão Logado'}</strong> ({cpf || '000.000.000-00'})
+                        Entrando como: <strong className="text-slate-900">{userName}</strong> ({cpf})
                       </div>
 
                       <div>
@@ -527,9 +526,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* 3. TELA DE CADASTRO DO CIDADÃO                            */}
-      {/* ========================================================= */}
+      {/* 3. TELA DE CADASTRO */}
       {currentView === 'cadastro' && (
         <div className="flex-1 bg-slate-100 flex flex-col">
           <header className="bg-[#005BAE] text-white px-8 py-4 flex items-center justify-between shadow-md">
@@ -556,6 +553,12 @@ export default function App() {
                 <h2 className="text-2xl font-bold text-[#005BAE]">Cadastro no Portal do Cidadão</h2>
                 <p className="text-xs text-slate-500 mt-1">Preencha seus dados para solicitar agendamentos no SUS Barra Mansa</p>
               </div>
+
+              {erroLogin && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs font-semibold border border-red-200">
+                  {erroLogin}
+                </div>
+              )}
 
               <form onSubmit={handleCadastro} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -681,12 +684,9 @@ export default function App() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* 4. PAINEL DO CIDADÃO (FIEL AOS PROTÓTIPOS 2, 3 E 4)        */}
-      {/* ========================================================= */}
+      {/* 4. PAINEL DO CIDADÃO */}
       {currentView === 'dashboard-cidadao' && (
         <div className="flex-1 bg-white text-slate-800 flex flex-col">
-          {/* Header Superior Azul (Protótipos 2, 3, 4) */}
           <header className="bg-[#005BAE] text-white px-8 py-4 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold tracking-tight">
@@ -710,7 +710,6 @@ export default function App() {
           </header>
 
           <div className="flex-1 flex flex-col md:flex-row">
-            {/* Sidebar Lateral */}
             <aside className="w-full md:w-64 bg-[#F8FAFC] border-r border-slate-200/80 p-4 space-y-1 shrink-0">
               <button
                 onClick={() => setActiveTabCidadao('meus-agendamentos')}
@@ -757,7 +756,6 @@ export default function App() {
               </button>
             </aside>
 
-            {/* Conteúdo Principal */}
             <main className="flex-1 p-6 md:p-10">
               {/* ABA 1: MEUS AGENDAMENTOS */}
               {activeTabCidadao === 'meus-agendamentos' && (
@@ -929,9 +927,7 @@ export default function App() {
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* 5. PAINEL DO POSTO DE SAÚDE                               */}
-      {/* ========================================================= */}
+      {/* 5. PAINEL DO POSTO DE SAÚDE */}
       {currentView === 'dashboard-posto' && (
         <div className="flex-1 bg-white text-slate-800 flex flex-col">
           <header className="bg-[#28A745] text-white px-8 py-4 flex items-center justify-between shadow-sm">
@@ -954,7 +950,7 @@ export default function App() {
 
           <main className="flex-1 p-6 md:p-10 space-y-6 max-w-6xl mx-auto w-full">
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">Gestão de Vagas e Solicitacões</h2>
+              <h2 className="text-2xl font-bold text-slate-800">Gestão de Vagas e Solicitações</h2>
               <p className="text-xs text-slate-500 mt-1">Aprove ou recuse os agendamentos da população de Barra Mansa</p>
             </div>
 
