@@ -25,13 +25,14 @@ export default function App() {
   const [currentView, setCurrentView] = useState('home');
   const [userRole, setUserRole] = useState('cidadao'); // 'cidadao' | 'posto'
   
-  // Login States
+  // Login States (Sem dados fictícios pré-carregados)
   const [loginMethod, setLoginMethod] = useState('traditional'); // 'traditional' | 'gov'
   const [govStep, setGovStep] = useState(1);
   const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
-  const [userName, setUserName] = useState('Maria da Silva');
+  const [userName, setUserName] = useState(''); // Começa vazio
   const [unidadeSelecionada, setUnidadeSelecionada] = useState('UBS Centro - Barra Mansa');
+  const [erroLogin, setErroLogin] = useState('');
 
   // Cadastro States
   const [formCadastro, setFormCadastro] = useState({
@@ -50,29 +51,8 @@ export default function App() {
   // Abas do Posto: 'gestao-agendamentos' | 'enviar-laudos'
   const [activeTabPosto, setActiveTabPosto] = useState('gestao-agendamentos');
 
-  // Estado dos Agendamentos
-  const [agendamentos, setAgendamentos] = useState([
-    {
-      id: 1,
-      paciente: 'Maria da Silva',
-      cpf: '123.456.789-00',
-      tipo: 'Consulta Médica',
-      especialidade: 'Clínica Geral',
-      unidade: 'UBS Centro - Barra Mansa',
-      data: '10 / 15 / 2026',
-      status: 'Confirmado'
-    },
-    {
-      id: 2,
-      paciente: 'Carlos Eduardo Santos',
-      cpf: '987.654.321-11',
-      tipo: 'Exame Laboratorial',
-      especialidade: 'Hemograma Completo',
-      unidade: 'Laboratório Municipal BM',
-      data: '10 / 18 / 2026',
-      status: 'Solicitado'
-    }
-  ]);
+  // Estado dos Agendamentos (Inicia vazio para o usuário logado criar os dele)
+  const [agendamentos, setAgendamentos] = useState([]);
 
   // Formulário de Agendamento do Cidadão
   const [formAgendamento, setFormAgendamento] = useState({
@@ -86,13 +66,8 @@ export default function App() {
   const [mensagens, setMensagens] = useState([
     {
       id: 1,
-      remetente: 'usuario',
-      texto: 'Gostaria de confirmação sobre o jejum para meu exame de amanhã.'
-    },
-    {
-      id: 2,
       remetente: 'ubs',
-      texto: 'Olá Maria! Para o Hemograma Completo é necessário jejum absoluto de 8 horas.'
+      texto: 'Olá! Bem-vindo ao canal de atendimento digital do SUS Barra Mansa.'
     }
   ]);
 
@@ -133,13 +108,23 @@ export default function App() {
     'Reginalda', 'Paraíso', 'São Luiz', 'Sirenio', 'Vila Maria'
   ];
 
-  // Ação de Login
+  // Ação de Login Corrigida (Exige validação dos campos)
   const handleLogin = (e) => {
     if (e) e.preventDefault();
+    setErroLogin('');
+
     if (userRole === 'cidadao') {
-      if (!userName.trim()) setUserName('Maria da Silva');
+      if (!cpf.trim() || !password.trim()) {
+        setErroLogin('Preencha seu CPF e senha para entrar.');
+        return;
+      }
+      // Se não houver nome configurado pelo cadastro, usa o CPF informado
+      if (!userName.trim()) {
+        setUserName(`Cidadão (${cpf})`);
+      }
       setCurrentView('dashboard-cidadao');
     } else {
+      setUserName(unidadeSelecionada);
       setCurrentView('dashboard-posto');
     }
   };
@@ -147,14 +132,25 @@ export default function App() {
   // Ação de Cadastro
   const handleCadastro = (e) => {
     e.preventDefault();
+    setErroLogin('');
+
     if (formCadastro.senha !== formCadastro.confirmarSenha) {
       alert('As senhas digitadas não coincidem.');
       return;
     }
-    setUserName(formCadastro.nome || 'Maria da Silva');
+    setUserName(formCadastro.nome);
     setCpf(formCadastro.cpf);
     alert('Cadastro realizado com sucesso no SUS Barra Mansa!');
     setCurrentView('dashboard-cidadao');
+  };
+
+  // Sair do sistema
+  const handleSair = () => {
+    setUserName('');
+    setCpf('');
+    setPassword('');
+    setErroLogin('');
+    setCurrentView('home');
   };
 
   // Criar Agendamento (Integrado ao Backend Render + LocalState)
@@ -166,8 +162,8 @@ export default function App() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            nome: userName || 'Maria da Silva',
-            cpf: cpf || '123.456.789-00',
+            nome: userName || 'Cidadão',
+            cpf: cpf || '000.000.000-00',
             ...formAgendamento
           })
         });
@@ -181,8 +177,8 @@ export default function App() {
 
     const novo = {
       id: Date.now(),
-      paciente: userName || 'Maria da Silva',
-      cpf: cpf || '123.456.789-00',
+      paciente: userName || 'Cidadão Logado',
+      cpf: cpf || '000.000.000-00',
       ...formAgendamento,
       data: dataFormatada,
       status: 'Solicitado'
@@ -210,7 +206,7 @@ export default function App() {
         const respostaAuto = {
           id: Date.now() + 1,
           remetente: 'ubs',
-          texto: `Olá ${userName || 'Maria'}! Sua mensagem foi recebida pela equipe da ${formAgendamento.unidade}. Em breve retornaremos com a resposta.`
+          texto: `Olá ${userName || 'Cidadão'}! Sua mensagem foi recebida pela equipe da ${formAgendamento.unidade}. Em breve retornaremos com a resposta.`
         };
         setMensagens((prev) => [...prev, respostaAuto]);
       }, 1000);
@@ -224,7 +220,7 @@ export default function App() {
 
   // Simulação de Download de PDF
   const handleDownloadPDF = (exameNome, localColeta) => {
-    const conteudo = `PREFEITURA MUNICIPAL DE BARRA MANSA\nSECRETARIA MUNICIPAL DE SAÚDE\nSYSTEM MEDTECH BARRA MANSA\n\n--------------------------------------------\nLAUDO DIGITAL DE EXAME DE LABORATÓRIO/IMAGEM\n--------------------------------------------\n\nPaciente: ${userName || 'Maria da Silva'}\nCPF: ${cpf || '000.000.000-00'}\nExame: ${exameNome}\nLocal de Coleta: ${localColeta}\nData de Emissão: ${new Date().toLocaleDateString('pt-BR')}\nStatus: Laudo Validado e Autenticado Digitalmente pelo SUS Barra Mansa.\n\nResultado: Parâmetros e índices laboratoriais dentro da normalidade de referência.\n\nDocumento gerado eletronicamente via Portal MedTech Barra Mansa.`;
+    const conteudo = `PREFEITURA MUNICIPAL DE BARRA MANSA\nSECRETARIA MUNICIPAL DE SAÚDE\nSYSTEM MEDTECH BARRA MANSA\n\n--------------------------------------------\nLAUDO DIGITAL DE EXAME DE LABORATÓRIO/IMAGEM\n--------------------------------------------\n\nPaciente: ${userName || 'Cidadão Logado'}\nCPF: ${cpf || '000.000.000-00'}\nExame: ${exameNome}\nLocal de Coleta: ${localColeta}\nData de Emissão: ${new Date().toLocaleDateString('pt-BR')}\nStatus: Laudo Validado e Autenticado Digitalmente pelo SUS Barra Mansa.\n\nResultado: Parâmetros e índices laboratoriais dentro da normalidade de referência.\n\nDocumento gerado eletronicamente via Portal MedTech Barra Mansa.`;
     
     const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -328,6 +324,7 @@ export default function App() {
       {/* ========================================================= */}
       {currentView === 'login' && (
         <div className="flex-1 bg-slate-100 flex flex-col">
+          {/* Header Superior Azul */}
           <header className="bg-[#005BAE] text-white px-8 py-4 flex items-center justify-between shadow-md">
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold tracking-tight">
@@ -353,6 +350,12 @@ export default function App() {
                   {userRole === 'cidadao' ? 'Acesso ao Portal do Cidadão' : 'Acesso do Posto de Saúde'}
                 </h2>
 
+                {erroLogin && (
+                  <div className="bg-red-50 text-red-600 p-3 rounded-lg text-xs font-semibold border border-red-200">
+                    {erroLogin}
+                  </div>
+                )}
+
                 <form onSubmit={handleLogin} className="space-y-5">
                   {userRole === 'cidadao' ? (
                     <div>
@@ -361,6 +364,7 @@ export default function App() {
                       </label>
                       <input
                         type="text"
+                        required
                         placeholder="000.000.000-00"
                         value={cpf}
                         onChange={(e) => setCpf(e.target.value)}
@@ -390,6 +394,7 @@ export default function App() {
                     </label>
                     <input
                       type="password"
+                      required
                       placeholder="•••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -397,6 +402,7 @@ export default function App() {
                     />
                   </div>
 
+                  {/* Caixa LGPD */}
                   <div className="bg-[#EBF9F1] border border-emerald-200/60 rounded-xl p-3.5 text-xs text-[#1E7E34] flex items-start gap-2.5">
                     <Lock className="w-4 h-4 text-[#28A745] shrink-0 mt-0.5" />
                     <span className="leading-relaxed">
@@ -433,6 +439,7 @@ export default function App() {
                 )}
               </div>
             ) : (
+              /* SIMULAÇÃO GOV.BR EM 2 ETAPAS */
               <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
                 <div className="bg-[#1351B4] p-5 text-white flex items-center justify-between">
                   <span className="text-2xl font-black tracking-tight">gov.br</span>
@@ -454,7 +461,7 @@ export default function App() {
                         </label>
                         <input
                           type="text"
-                          placeholder="Ex: Maria da Silva"
+                          placeholder="Ex: Seu Nome"
                           value={userName}
                           onChange={(e) => setUserName(e.target.value)}
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-[#1351B4] outline-none"
@@ -485,7 +492,7 @@ export default function App() {
                   ) : (
                     <div className="space-y-4">
                       <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-600">
-                        Entrando como: <strong className="text-slate-900">{userName || 'Maria da Silva'}</strong> ({cpf || '000.000.000-00'})
+                        Entrando como: <strong className="text-slate-900">{userName || 'Cidadão'}</strong> ({cpf || '000.000.000-00'})
                       </div>
 
                       <div>
@@ -695,10 +702,10 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-2 text-sm font-medium">
-              <span>{userName || 'Maria da Silva'}</span>
+              <span>{userName || 'Cidadão Logado'}</span>
               <span className="text-blue-200">|</span>
               <button
-                onClick={() => setCurrentView('home')}
+                onClick={handleSair}
                 className="hover:underline text-white font-normal"
               >
                 Sair
@@ -707,7 +714,7 @@ export default function App() {
           </header>
 
           <div className="flex-1 flex flex-col md:flex-row">
-            {/* Sidebar */}
+            {/* Sidebar Lateral */}
             <aside className="w-full md:w-64 bg-[#F8FAFC] border-r border-slate-200/80 p-4 space-y-1 shrink-0">
               <button
                 onClick={() => setActiveTabCidadao('meus-agendamentos')}
@@ -754,7 +761,7 @@ export default function App() {
               </button>
             </aside>
 
-            {/* Conteúdo Principal */}
+            {/* Conteúdo Principal do Painel */}
             <main className="flex-1 p-6 md:p-10">
               {/* ABA 1: MEUS AGENDAMENTOS */}
               {activeTabCidadao === 'meus-agendamentos' && (
@@ -765,20 +772,26 @@ export default function App() {
                   </div>
 
                   <div className="grid grid-cols-1 gap-4">
-                    {agendamentos.map((item) => (
-                      <div key={item.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                        <div className="space-y-1">
-                          <span className="text-xs font-bold uppercase tracking-wider text-blue-600">{item.tipo}</span>
-                          <h4 className="text-lg font-bold text-slate-800">{item.especialidade}</h4>
-                          <p className="text-xs text-slate-500">{item.unidade} • Data: <strong className="text-slate-700">{item.data}</strong></p>
-                        </div>
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-                          item.status === 'Confirmado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                        }`}>
-                          {item.status}
-                        </span>
+                    {agendamentos.length === 0 ? (
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center text-slate-500 text-sm">
+                        Nenhum agendamento realizado ainda. Clique na aba <strong>"Solicitar Agendamento"</strong> para fazer a sua primeira marcação.
                       </div>
-                    ))}
+                    ) : (
+                      agendamentos.map((item) => (
+                        <div key={item.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                          <div className="space-y-1">
+                            <span className="text-xs font-bold uppercase tracking-wider text-blue-600">{item.tipo}</span>
+                            <h4 className="text-lg font-bold text-slate-800">{item.especialidade}</h4>
+                            <p className="text-xs text-slate-500">{item.unidade} • Data: <strong className="text-slate-700">{item.data}</strong></p>
+                          </div>
+                          <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                            item.status === 'Confirmado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {item.status}
+                          </span>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -936,7 +949,7 @@ export default function App() {
             </div>
 
             <button
-              onClick={() => setCurrentView('home')}
+              onClick={handleSair}
               className="text-xs hover:underline text-white font-medium"
             >
               Sair da Gestão
@@ -945,49 +958,26 @@ export default function App() {
 
           <main className="flex-1 p-6 md:p-10 space-y-6 max-w-6xl mx-auto w-full">
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">Gestão de Vagas e Solicitacões</h2>
+              <h2 className="text-2xl font-bold text-slate-800">Gestão de Vagas e Solicitações</h2>
               <p className="text-xs text-slate-500 mt-1">Aprove ou recuse os agendamentos da população de Barra Mansa</p>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
-              {agendamentos.map((item) => (
-                <div key={item.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div className="space-y-1">
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">{item.tipo}</span>
-                    <h4 className="text-base font-bold text-slate-800">{item.paciente} ({item.cpf})</h4>
-                    <p className="text-xs text-slate-500">{item.especialidade} • Data: <strong>{item.data}</strong></p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    {item.status === 'Solicitado' ? (
-                      <>
-                        <button
-                          onClick={() => handleAlterarStatusAgendamento(item.id, 'Confirmado')}
-                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
-                        >
-                          <CheckCircle2 className="w-4 h-4" /> Aprovar
-                        </button>
-                        <button
-                          onClick={() => handleAlterarStatusAgendamento(item.id, 'Cancelado')}
-                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
-                        >
-                          <XCircle className="w-4 h-4" /> Recusar
-                        </button>
-                      </>
-                    ) : (
-                      <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-                        item.status === 'Confirmado' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
-                      }`}>
-                        {item.status}
-                      </span>
-                    )}
-                  </div>
+              {agendamentos.length === 0 ? (
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center text-slate-500 text-sm">
+                  Nenhum agendamento pendente no momento para esta unidade.
                 </div>
-              ))}
-            </div>
-          </main>
-        </div>
-      )}
-    </div>
-  );
-}
+              ) : (
+                agendamentos.map((item) => (
+                  <div key={item.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="space-y-1">
+                      <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">{item.tipo}</span>
+                      <h4 className="text-base font-bold text-slate-800">{item.paciente} ({item.cpf})</h4>
+                      <p className="text-xs text-slate-500">{item.especialidade} • Data: <strong>{item.data}</strong></p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {item.status === 'Solicitado' ? (
+                        <>
+                          <button
+                            onClick={() => handleAlterarStatusAgendamento(item.id, 'Confirm
