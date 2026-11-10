@@ -25,6 +25,7 @@ export default function App() {
   const [govPassword, setGovPassword] = useState("");
   const [loginError, setLoginError] = useState("");
 
+  // ESTADO DOS AGENDAMENTOS (Mantido exatamente como estava)
   const [agendamentos, setAgendamentos] = useState([
     {
       id: 1,
@@ -44,6 +45,7 @@ export default function App() {
   });
 
   const [showAgendamentoSuccess, setShowAgendamentoSuccess] = useState(false);
+
   const [exames] = useState([
     {
       id: 1,
@@ -126,6 +128,7 @@ export default function App() {
     setCurrentPage("home");
   };
 
+  // SUBMIT DO AGENDAMENTO (Mantido intacto com chamada a API e estado local)
   const handleAgendarSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -449,7 +452,7 @@ export default function App() {
     );
   }
 
-  // --- DASHBOARD PACIENTE ---
+  // --- DASHBOARD DO PACIENTE ---
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       <header className="bg-[#005BAE] text-white shadow-md">
@@ -502,6 +505,7 @@ export default function App() {
           </button>
         </div>
 
+        {/* ABA AGENDAR: MANTIDA 100% INTATCA */}
         {activeTab === "agendar" && (
           <div className="grid md:grid-cols-3 gap-8">
             <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
