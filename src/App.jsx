@@ -25,12 +25,12 @@ export default function App() {
   const [currentView, setCurrentView] = useState('home');
   const [userRole, setUserRole] = useState('cidadao'); // 'cidadao' | 'posto'
   
-  // Login States (Sem dados fictícios pré-carregados)
+  // Login States (Iniciam limpos - sem auto-login da Maria da Silva)
   const [loginMethod, setLoginMethod] = useState('traditional'); // 'traditional' | 'gov'
   const [govStep, setGovStep] = useState(1);
   const [cpf, setCpf] = useState('');
   const [password, setPassword] = useState('');
-  const [userName, setUserName] = useState(''); // Começa vazio
+  const [userName, setUserName] = useState('');
   const [unidadeSelecionada, setUnidadeSelecionada] = useState('UBS Centro - Barra Mansa');
   const [erroLogin, setErroLogin] = useState('');
 
@@ -51,7 +51,7 @@ export default function App() {
   // Abas do Posto: 'gestao-agendamentos' | 'enviar-laudos'
   const [activeTabPosto, setActiveTabPosto] = useState('gestao-agendamentos');
 
-  // Estado dos Agendamentos (Inicia vazio para o usuário logado criar os dele)
+  // Estado dos Agendamentos (Inicia com lista dinâmica)
   const [agendamentos, setAgendamentos] = useState([]);
 
   // Formulário de Agendamento do Cidadão
@@ -59,21 +59,21 @@ export default function App() {
     tipo: 'Consulta Médica',
     especialidade: 'Clínica Geral',
     unidade: 'UBS Centro - Barra Mansa',
-    data: '2026-10-15'
+    data: '2026-11-20'
   });
 
-  // Mensagens do Chat
+  // Mensagens do Chat (Protótipo 4)
   const [mensagens, setMensagens] = useState([
     {
       id: 1,
       remetente: 'ubs',
-      texto: 'Olá! Bem-vindo ao canal de atendimento digital do SUS Barra Mansa.'
+      texto: 'Olá! Bem-vindo ao canal de atendimento digital da Secretaria Municipal de Saúde de Barra Mansa.'
     }
   ]);
 
   const [novaMensagem, setNovaMensagem] = useState('');
 
-  // Exames do Cidadão
+  // Exames do Cidadão (Protótipo 3)
   const exames = [
     {
       id: 1,
@@ -108,17 +108,16 @@ export default function App() {
     'Reginalda', 'Paraíso', 'São Luiz', 'Sirenio', 'Vila Maria'
   ];
 
-  // Ação de Login Corrigida (Exige validação dos campos)
+  // Ação de Login Corrigida (Exige preenchimento de campos)
   const handleLogin = (e) => {
     if (e) e.preventDefault();
     setErroLogin('');
 
     if (userRole === 'cidadao') {
       if (!cpf.trim() || !password.trim()) {
-        setErroLogin('Preencha seu CPF e senha para entrar.');
+        setErroLogin('Por favor, informe seu CPF e senha de acesso.');
         return;
       }
-      // Se não houver nome configurado pelo cadastro, usa o CPF informado
       if (!userName.trim()) {
         setUserName(`Cidadão (${cpf})`);
       }
@@ -144,7 +143,7 @@ export default function App() {
     setCurrentView('dashboard-cidadao');
   };
 
-  // Sair do sistema
+  // Sair do Sistema
   const handleSair = () => {
     setUserName('');
     setCpf('');
@@ -156,24 +155,8 @@ export default function App() {
   // Criar Agendamento (Integrado ao Backend Render + LocalState)
   const handleAgendar = async (e) => {
     e.preventDefault();
-    try {
-      if (import.meta.env.VITE_API_URL) {
-        await fetch(`${import.meta.env.VITE_API_URL}/api/agendamentos`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            nome: userName || 'Cidadão',
-            cpf: cpf || '000.000.000-00',
-            ...formAgendamento
-          })
-        });
-      }
-    } catch (err) {
-      console.error(err);
-    }
-
     const dataPartes = formAgendamento.data.split('-');
-    const dataFormatada = dataPartes.length === 3 ? `${dataPartes[1]} / ${dataPartes[2]} / ${dataPartes[0]}` : formAgendamento.data;
+    const dataFormatada = dataPartes.length === 3 ? `${dataPartes[2]} / ${dataPartes[1]} / ${dataPartes[0]}` : formAgendamento.data;
 
     const novo = {
       id: Date.now(),
@@ -183,6 +166,19 @@ export default function App() {
       data: dataFormatada,
       status: 'Solicitado'
     };
+
+    try {
+      if (import.meta.env.VITE_API_URL) {
+        await fetch(`${import.meta.env.VITE_API_URL}/api/agendamentos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(novo)
+        });
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
     setAgendamentos([novo, ...agendamentos]);
     setActiveTabCidadao('meus-agendamentos');
   };
@@ -242,12 +238,12 @@ export default function App() {
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
           
           <div className="z-10 flex flex-col items-center text-center max-w-3xl w-full">
-            {/* Logo Estetoscópio M */}
+            {/* Logo Estetoscópio M (Azul e Verde) */}
             <div className="flex items-center justify-center mb-4">
               <div className="relative flex items-center justify-center w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 shadow-2xl">
                 <svg className="w-12 h-12" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M12 48V20C12 16 15 12 20 12C24 12 26 15 28 19L32 28L36 19C38 15 40 12 44 12C49 12 52 16 52 20V34" stroke="#0080FF" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M12 48C12 52 16 54 20 54C24 54 28 50 28 44V28" stroke="#28A745" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 48C12 52 16 54 28 54C24 54 28 50 28 44V28" stroke="#28A745" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
                   <circle cx="52" cy="42" r="6" stroke="#28A745" strokeWidth="4" fill="#0f172a"/>
                 </svg>
               </div>
@@ -320,11 +316,11 @@ export default function App() {
       )}
 
       {/* ========================================================= */}
-      {/* 2. TELA DE LOGIN                                         */}
+      {/* 2. TELA DE LOGIN (FIEL AO PROTÓTIPO 1)                     */}
       {/* ========================================================= */}
       {currentView === 'login' && (
         <div className="flex-1 bg-slate-100 flex flex-col">
-          {/* Header Superior Azul */}
+          {/* Header Superior Azul (Protótipo 1) */}
           <header className="bg-[#005BAE] text-white px-8 py-4 flex items-center justify-between shadow-md">
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold tracking-tight">
@@ -364,7 +360,6 @@ export default function App() {
                       </label>
                       <input
                         type="text"
-                        required
                         placeholder="000.000.000-00"
                         value={cpf}
                         onChange={(e) => setCpf(e.target.value)}
@@ -394,7 +389,6 @@ export default function App() {
                     </label>
                     <input
                       type="password"
-                      required
                       placeholder="•••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
@@ -402,7 +396,7 @@ export default function App() {
                     />
                   </div>
 
-                  {/* Caixa LGPD */}
+                  {/* Caixa de Conformidade LGPD (Fiel ao Protótipo 1) */}
                   <div className="bg-[#EBF9F1] border border-emerald-200/60 rounded-xl p-3.5 text-xs text-[#1E7E34] flex items-start gap-2.5">
                     <Lock className="w-4 h-4 text-[#28A745] shrink-0 mt-0.5" />
                     <span className="leading-relaxed">
@@ -410,6 +404,7 @@ export default function App() {
                     </span>
                   </div>
 
+                  {/* Botão Entrar no Sistema */}
                   <button
                     type="submit"
                     className={`w-full py-3.5 ${userRole === 'cidadao' ? 'bg-[#005BAE] hover:bg-blue-700' : 'bg-[#28A745] hover:bg-emerald-700'} text-white font-bold rounded-xl text-sm tracking-wide transition-colors shadow-sm uppercase`}
@@ -461,7 +456,7 @@ export default function App() {
                         </label>
                         <input
                           type="text"
-                          placeholder="Ex: Seu Nome"
+                          placeholder="Ex: Seu Nome Completo"
                           value={userName}
                           onChange={(e) => setUserName(e.target.value)}
                           className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-[#1351B4] outline-none"
@@ -492,7 +487,7 @@ export default function App() {
                   ) : (
                     <div className="space-y-4">
                       <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-600">
-                        Entrando como: <strong className="text-slate-900">{userName || 'Cidadão'}</strong> ({cpf || '000.000.000-00'})
+                        Entrando como: <strong className="text-slate-900">{userName || 'Cidadão Logado'}</strong> ({cpf || '000.000.000-00'})
                       </div>
 
                       <div>
@@ -687,10 +682,11 @@ export default function App() {
       )}
 
       {/* ========================================================= */}
-      {/* 4. PAINEL DO CIDADÃO                                      */}
+      {/* 4. PAINEL DO CIDADÃO (FIEL AOS PROTÓTIPOS 2, 3 E 4)        */}
       {/* ========================================================= */}
       {currentView === 'dashboard-cidadao' && (
         <div className="flex-1 bg-white text-slate-800 flex flex-col">
+          {/* Header Superior Azul (Protótipos 2, 3, 4) */}
           <header className="bg-[#005BAE] text-white px-8 py-4 flex items-center justify-between shadow-sm">
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold tracking-tight">
@@ -761,7 +757,7 @@ export default function App() {
               </button>
             </aside>
 
-            {/* Conteúdo Principal do Painel */}
+            {/* Conteúdo Principal */}
             <main className="flex-1 p-6 md:p-10">
               {/* ABA 1: MEUS AGENDAMENTOS */}
               {activeTabCidadao === 'meus-agendamentos' && (
@@ -774,7 +770,7 @@ export default function App() {
                   <div className="grid grid-cols-1 gap-4">
                     {agendamentos.length === 0 ? (
                       <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center text-slate-500 text-sm">
-                        Nenhum agendamento realizado ainda. Clique na aba <strong>"Solicitar Agendamento"</strong> para fazer a sua primeira marcação.
+                        Nenhum agendamento realizado ainda. Clique na aba <strong>"Solicitar Agendamento"</strong> para enviar sua primeira solicitação.
                       </div>
                     ) : (
                       agendamentos.map((item) => (
@@ -958,14 +954,14 @@ export default function App() {
 
           <main className="flex-1 p-6 md:p-10 space-y-6 max-w-6xl mx-auto w-full">
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">Gestão de Vagas e Solicitações</h2>
+              <h2 className="text-2xl font-bold text-slate-800">Gestão de Vagas e Solicitacões</h2>
               <p className="text-xs text-slate-500 mt-1">Aprove ou recuse os agendamentos da população de Barra Mansa</p>
             </div>
 
             <div className="grid grid-cols-1 gap-4">
               {agendamentos.length === 0 ? (
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-8 text-center text-slate-500 text-sm">
-                  Nenhum agendamento pendente no momento para esta unidade.
+                  Nenhuma solicitação pendente no momento para esta unidade.
                 </div>
               ) : (
                 agendamentos.map((item) => (
@@ -980,4 +976,33 @@ export default function App() {
                       {item.status === 'Solicitado' ? (
                         <>
                           <button
-                            onClick={() => handleAlterarStatusAgendamento(item.id, 'Confirm
+                            onClick={() => handleAlterarStatusAgendamento(item.id, 'Confirmado')}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
+                          >
+                            <CheckCircle2 className="w-4 h-4" /> Aprovar
+                          </button>
+                          <button
+                            onClick={() => handleAlterarStatusAgendamento(item.id, 'Cancelado')}
+                            className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
+                          >
+                            <XCircle className="w-4 h-4" /> Recusar
+                          </button>
+                        </>
+                      ) : (
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                          item.status === 'Confirmado' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                        }`}>
+                          {item.status}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </main>
+        </div>
+      )}
+    </div>
+  );
+}
