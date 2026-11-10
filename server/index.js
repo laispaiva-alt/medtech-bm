@@ -1,95 +1,83 @@
 const express = require('express');
 const cors = require('cors');
+const pool = require('./db');
 require('dotenv').config();
-const db = require('./db');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
 
-app.get('/api/status', (req, res) => {
-  res.json({ mensagem: 'API do MedTech BM está rodando!' });
+// Rota de Teste
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Servidor MedTech BM rodando perfeitamente!' });
 });
 
-// Listar unidades
-app.get('/api/unidades', async (req, res) => {
+// 1. ROTA DE CADASTRO REAL DE USUÁRIOS
+app.post('/api/usuarios', async (req, res) => {
+  const { nome, cpf, senha } = req.body;
   try {
-    const result = await db.query('SELECT * FROM unidades ORDER BY nome ASC');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Erro no Banco:', err.message);
-    res.status(500).json({ erro: 'Erro ao buscar unidades.' });
-  }
-});
-
-// Listar agendamentos
-app.get('/api/agendamentos', async (req, res) => {
-  try {
-    const queryText = `
-      SELECT a.id, a.tipo, a.especialidade, a.data_agendamento, a.horario, a.status,
-             u.nome AS unidade_nome, u.bairro AS unidade_bairro
-      FROM agendamentos a
-      LEFT JOIN unidades u ON a.unidade_id = u.id
-      ORDER BY a.data_agendamento DESC, a.horario ASC
-    `;
-    const result = await db.query(queryText);
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Erro no Banco:', err.message);
-    res.status(500).json({ erro: 'Erro ao buscar agendamentos.' });
-  }
-});
-
-// Criar agendamento
-app.post('/api/agendamentos', async (req, res) => {
-  const { unidade_id, tipo, especialidade, data_agendamento, horario } = req.body;
-
-  if (!unidade_id || !tipo || !especialidade || !data_agendamento || !horario) {
-    return res.status(400).json({ erro: 'Preencha todos os campos.' });
-  }
-
-  try {
-    const checagem = await db.query(
-      'SELECT id FROM agendamentos WHERE unidade_id = $1 AND data_agendamento = $2 AND horario = $3 AND status != $4',
-      [unidade_id, data_agendamento, horario, 'Cancelado']
-    );
-
-    if (checagem.rows.length > 0) {
-      return res.status(400).json({ erro: 'Este horário já está ocupado nesta unidade.' });
+    const userExist = await pool.query('SELECT * FROM usuarios WHERE cpf = $1', [cpf]);
+    if (userExist.rows.length > 0) {
+      return res.status(400).json({ error: 'CPF já cadastrado.' });
     }
 
-    const queryText = `
-      INSERT INTO agendamentos (unidade_id, tipo, especialidade, data_agendamento, horario)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-    `;
-    const values = [unidade_id, tipo, especialidade, data_agendamento, horario];
-    const result = await db.query(queryText, values);
-    
-    res.status(201).json({
-      mensagem: 'Agendamento criado com sucesso!',
-      agendamento: result.rows[0]
-    });
+    const newUser = await pool.query(
+      'INSERT INTO usuarios (nome, cpf, senha) VALUES ($1, $2, $3) RETURNING id, nome, cpf',
+      [nome, cpf, senha]
+    );
+
+    res.status(201).json({ user: newUser.rows[0] });
   } catch (err) {
-    console.error('Erro no Banco:', err.message);
-    res.status(500).json({ erro: 'Erro ao salvar agendamento.' });
+    console.error(err);
+    res.status(500).json({ error: 'Erro ao cadastrar usuário.' });
   }
 });
 
-// Cancelar agendamento
-app.delete('/api/agendamentos/:id', async (req, res) => {
-  const { id } = req.params;
+// 2. ROTA DE LOGIN COM VALIDAÇÃO DE BANCO
+app.post('/api/login', async (req, res) => {
+  const { cpf, senha } = req.body;
   try {
-    await db.query('DELETE FROM agendamentos WHERE id = $1', [id]);
-    res.json({ mensagem: 'Agendamento cancelado com sucesso!' });
+    const result = await pool.query(
+      'SELECT id, nome, cpf FROM usuarios WHERE cpf = $1 AND senha = $2',
+      [cpf, senha]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({ error: 'CPF ou senha incorretos. Cadastre-se primeiro!' });
+    }
+
+    res.json({ user: result.rows[0] });
   } catch (err) {
-    console.error('Erro no Banco:', err.message);
-    res.status(500).json({ erro: 'Erro ao cancelar agendamento.' });
+    console.error(err);
+    res.status(500).json({ error: 'Erro no servidor ao tentar login.' });
+  }
+});
+
+// 3. AGENDAMENTOS
+app.get('/api/agendamentos', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM agendamentos ORDER BY id DESC');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao buscar agendamentos' });
+  }
+});
+
+app.post('/api/agendamentos', async (req, res) => {
+  const { paciente, cpf, tipo, especialidade, unidade, data } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO agendamentos (paciente_nome, cpf, tipo, especialidade, unidade, data) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [paciente, cpf, tipo, especialidade, unidade, data]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Erro ao criar agendamento' });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`Servidor MedTech BM rodando na porta ${PORT}`);
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
