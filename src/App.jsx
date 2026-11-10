@@ -108,8 +108,8 @@ export default function App() {
     'Reginalda', 'Paraíso', 'São Luiz', 'Sirenio', 'Vila Maria'
   ];
 
-  // Validação estrita no Login
-  const handleLogin = (e) => {
+  // Validação estrita no Login com consulta de Backend/Cadastro
+  const handleLogin = async (e) => {
     if (e) e.preventDefault();
     setErroLogin('');
 
@@ -118,10 +118,37 @@ export default function App() {
         setErroLogin('Preencha seu CPF e senha de acesso para entrar.');
         return;
       }
-      if (!userName.trim()) {
-        setUserName(`Cidadão (${cpf})`);
+
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || '';
+        
+        if (apiUrl) {
+          const res = await fetch(`${apiUrl}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cpf, senha: password })
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            setErroLogin(data.error || 'CPF ou senha incorretos. Cadastre-se primeiro!');
+            return;
+          }
+
+          setUserName(data.user.nome);
+        } else {
+          if (!userName.trim()) {
+            setErroLogin('Usuário não encontrado. Por favor, realize o cadastro!');
+            return;
+          }
+        }
+
+        setCurrentView('dashboard-cidadao');
+      } catch (err) {
+        console.error(err);
+        setErroLogin('Erro ao conectar com o servidor. Verifique se o cadastro foi realizado.');
       }
-      setCurrentView('dashboard-cidadao');
     } else {
       setUserName(unidadeSelecionada);
       setCurrentView('dashboard-posto');
@@ -129,7 +156,7 @@ export default function App() {
   };
 
   // Ação de Cadastro
-  const handleCadastro = (e) => {
+  const handleCadastro = async (e) => {
     e.preventDefault();
     setErroLogin('');
 
@@ -142,10 +169,37 @@ export default function App() {
       alert('As senhas digitadas não coincidem.');
       return;
     }
-    setUserName(formCadastro.nome);
-    setCpf(formCadastro.cpf);
-    alert('Cadastro realizado com sucesso no SUS Barra Mansa!');
-    setCurrentView('dashboard-cidadao');
+
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL || '';
+      
+      if (apiUrl) {
+        const res = await fetch(`${apiUrl}/api/usuarios`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nome: formCadastro.nome,
+            cpf: formCadastro.cpf,
+            senha: formCadastro.senha
+          })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          setErroLogin(data.error || 'Erro ao realizar o cadastro.');
+          return;
+        }
+      }
+
+      setUserName(formCadastro.nome);
+      setCpf(formCadastro.cpf);
+      alert('Cadastro realizado com sucesso no SUS Barra Mansa!');
+      setCurrentView('dashboard-cidadao');
+    } catch (err) {
+      console.error(err);
+      setErroLogin('Erro ao realizar o cadastro no servidor.');
+    }
   };
 
   // Sair do Sistema
