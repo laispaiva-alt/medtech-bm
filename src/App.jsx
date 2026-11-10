@@ -1,659 +1,993 @@
 import React, { useState } from 'react';
 import { 
-  HeartPulse, 
-  User, 
-  Lock, 
   Calendar, 
   FileText, 
   MessageSquare, 
   LogOut, 
-  ChevronRight, 
+  PlusCircle, 
   Download, 
-  CircleCheck, 
-  ShieldCheck, 
+  Clock, 
+  Send, 
   Building2, 
-  Send 
+  User, 
+  ChevronRight,
+  ArrowLeft,
+  CheckCircle2,
+  XCircle,
+  FileCheck,
+  UserCheck,
+  Lock,
+  UserPlus
 } from 'lucide-react';
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState("home");
-  const [activeTab, setActiveTab] = useState("agendar");
-  const [user, setUser] = useState({ name: "Maria da Silva", cpf: "123.456.789-00" });
-  const [loginForm, setLoginForm] = useState({ cpf: "", senha: "" });
-  const [govCpf, setGovCpf] = useState("");
+  // Estado das visões: 'home' | 'login' | 'cadastro' | 'dashboard-cidadao' | 'dashboard-posto'
+  const [currentView, setCurrentView] = useState('home');
+  const [userRole, setUserRole] = useState('cidadao'); // 'cidadao' | 'posto'
+  
+  // Login States
+  const [loginMethod, setLoginMethod] = useState('traditional'); // 'traditional' | 'gov'
   const [govStep, setGovStep] = useState(1);
-  const [govPassword, setGovPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
+  const [cpf, setCpf] = useState('');
+  const [password, setPassword] = useState('');
+  const [userName, setUserName] = useState('Maria da Silva');
+  const [unidadeSelecionada, setUnidadeSelecionada] = useState('UBS Centro - Barra Mansa');
 
-  // ESTADO DOS AGENDAMENTOS (Mantido exatamente como estava)
+  // Cadastro States
+  const [formCadastro, setFormCadastro] = useState({
+    nome: '',
+    cpf: '',
+    cartaoSus: '',
+    dataNascimento: '',
+    bairro: 'Centro',
+    senha: '',
+    confirmarSenha: ''
+  });
+
+  // Abas do Cidadão: 'meus-agendamentos' | 'agendar' | 'exames' | 'chat'
+  const [activeTabCidadao, setActiveTabCidadao] = useState('agendar');
+
+  // Abas do Posto: 'gestao-agendamentos' | 'enviar-laudos'
+  const [activeTabPosto, setActiveTabPosto] = useState('gestao-agendamentos');
+
+  // Estado dos Agendamentos
   const [agendamentos, setAgendamentos] = useState([
     {
       id: 1,
-      tipo: "Consulta Médica",
-      especialidade: "Clínica Geral",
-      unidade: "UBS Centro - Barra Mansa",
-      data: "2026-10-15",
-      status: "Confirmado"
+      paciente: 'Maria da Silva',
+      cpf: '123.456.789-00',
+      tipo: 'Consulta Médica',
+      especialidade: 'Clínica Geral',
+      unidade: 'UBS Centro - Barra Mansa',
+      data: '10 / 15 / 2026',
+      status: 'Confirmado'
+    },
+    {
+      id: 2,
+      paciente: 'Carlos Eduardo Santos',
+      cpf: '987.654.321-11',
+      tipo: 'Exame Laboratorial',
+      especialidade: 'Hemograma Completo',
+      unidade: 'Laboratório Municipal BM',
+      data: '10 / 18 / 2026',
+      status: 'Solicitado'
     }
   ]);
 
-  const [formData, setFormData] = useState({
-    tipo: "Consulta Médica",
-    especialidade: "Clínica Geral",
-    unidade: "UBS Centro - Barra Mansa",
-    data: "2026-10-15"
+  // Formulário de Agendamento do Cidadão
+  const [formAgendamento, setFormAgendamento] = useState({
+    tipo: 'Consulta Médica',
+    especialidade: 'Clínica Geral',
+    unidade: 'UBS Centro - Barra Mansa',
+    data: '2026-10-15'
   });
 
-  const [showAgendamentoSuccess, setShowAgendamentoSuccess] = useState(false);
-
-  const [exames] = useState([
+  // Mensagens do Chat
+  const [mensagens, setMensagens] = useState([
     {
       id: 1,
-      data: "10/08/2026",
-      exame: "Hemograma Completo",
-      local: "Laboratório Municipal BM",
-      status: "Pronto"
+      remetente: 'usuario',
+      texto: 'Gostaria de confirmação sobre o jejum para meu exame de amanhã.'
     },
     {
       id: 2,
-      data: "02/05/2026",
-      exame: "Raio-X Torácico",
-      local: "UPA Barra Mansa",
-      status: "Pronto"
+      remetente: 'ubs',
+      texto: 'Olá Maria! Para o Hemograma Completo é necessário jejum absoluto de 8 horas.'
     }
   ]);
 
-  const [messages, setMessages] = useState([
+  const [novaMensagem, setNovaMensagem] = useState('');
+
+  // Exames do Cidadão
+  const exames = [
     {
       id: 1,
-      sender: "user",
-      text: "Gostaria de confirmação sobre o jejum para meu exame de amanhã.",
-      time: "09:30"
+      data: '10/08/2026',
+      exame: 'Hemograma Completo',
+      local: 'Laboratório Municipal BM',
+      status: 'Pronto',
+      pdf: 'Laudo_Hemograma_Completo.pdf'
     },
     {
       id: 2,
-      sender: "system",
-      text: "Olá Maria! Para o Hemograma Completo é necessário jejum absoluto de 8 horas.",
-      time: "09:35"
+      data: '02/05/2026',
+      exame: 'Raio-X Toráxico',
+      local: 'UPA Barra Mansa',
+      status: 'Pronto',
+      pdf: 'Laudo_RaioX_Toraxico.pdf'
     }
-  ]);
-
-  const [newMessage, setNewMessage] = useState("");
-
-  const unidadesBarraMansa = [
-    "UBS Centro - Barra Mansa",
-    "UBS Ano Bom",
-    "UBS Santa Rosa",
-    "UBS Reginaldo Roriz (São Luiz)",
-    "UBS Vila Nova",
-    "UPA 24h - Barra Mansa",
-    "Laboratório Municipal BM",
-    "Santa Casa de Misericórdia de Barra Mansa"
   ];
 
-  const handleTraditionalLogin = (e) => {
+  // Postos de Saúde de Barra Mansa
+  const postosBarraMansa = [
+    'UBS Centro - Barra Mansa',
+    'UPA Barra Mansa',
+    'USF Ano Bom - Barra Mansa',
+    'USF Santa Rosa - Barra Mansa',
+    'USF Vila Nova - Barra Mansa',
+    'Laboratório Municipal BM'
+  ];
+
+  const bairrosBarraMansa = [
+    'Ano Bom', 'Centro', 'Vila Nova', 'Santa Rosa', 'Boa Sorte', 
+    'Reginalda', 'Paraíso', 'São Luiz', 'Sirenio', 'Vila Maria'
+  ];
+
+  // Ação de Login
+  const handleLogin = (e) => {
+    if (e) e.preventDefault();
+    if (userRole === 'cidadao') {
+      if (!userName.trim()) setUserName('Maria da Silva');
+      setCurrentView('dashboard-cidadao');
+    } else {
+      setCurrentView('dashboard-posto');
+    }
+  };
+
+  // Ação de Cadastro
+  const handleCadastro = (e) => {
     e.preventDefault();
-    if (!loginForm.cpf || !loginForm.senha) {
-      setLoginError("Por favor, preencha o CPF e a senha.");
+    if (formCadastro.senha !== formCadastro.confirmarSenha) {
+      alert('As senhas digitadas não coincidem.');
       return;
     }
-    setLoginError("");
-    setCurrentPage("dashboard");
+    setUserName(formCadastro.nome || 'Maria da Silva');
+    setCpf(formCadastro.cpf);
+    alert('Cadastro realizado com sucesso no SUS Barra Mansa!');
+    setCurrentView('dashboard-cidadao');
   };
 
-  const handleGovNextStep = (e) => {
-    e.preventDefault();
-    if (!govCpf) {
-      setLoginError("Digite o seu CPF para continuar.");
-      return;
-    }
-    setLoginError("");
-    setGovStep(2);
-  };
-
-  const handleGovSubmit = (e) => {
-    e.preventDefault();
-    if (!govPassword) {
-      setLoginError("Digite sua senha do Gov.br.");
-      return;
-    }
-    setLoginError("");
-    setCurrentPage("dashboard");
-    setGovStep(1);
-    setGovCpf("");
-    setGovPassword("");
-  };
-
-  const handleLogout = () => {
-    setCurrentPage("home");
-  };
-
-  // SUBMIT DO AGENDAMENTO (Mantido intacto com chamada a API e estado local)
-  const handleAgendarSubmit = async (e) => {
+  // Criar Agendamento (Integrado ao Backend Render + LocalState)
+  const handleAgendar = async (e) => {
     e.preventDefault();
     try {
       if (import.meta.env.VITE_API_URL) {
         await fetch(`${import.meta.env.VITE_API_URL}/api/agendamentos`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
+          body: JSON.stringify({
+            nome: userName || 'Maria da Silva',
+            cpf: cpf || '123.456.789-00',
+            ...formAgendamento
+          })
         });
       }
     } catch (err) {
       console.error(err);
     }
-    const newAgendamento = {
+
+    const dataPartes = formAgendamento.data.split('-');
+    const dataFormatada = dataPartes.length === 3 ? `${dataPartes[1]} / ${dataPartes[2]} / ${dataPartes[0]}` : formAgendamento.data;
+
+    const novo = {
       id: Date.now(),
-      ...formData,
-      status: "Solicitado"
+      paciente: userName || 'Maria da Silva',
+      cpf: cpf || '123.456.789-00',
+      ...formAgendamento,
+      data: dataFormatada,
+      status: 'Solicitado'
     };
-    setAgendamentos([newAgendamento, ...agendamentos]);
-    setShowAgendamentoSuccess(true);
-    setTimeout(() => setShowAgendamentoSuccess(false), 4000);
+    setAgendamentos([novo, ...agendamentos]);
+    setActiveTabCidadao('meus-agendamentos');
   };
 
-  const handleSendMessage = (e) => {
+  // Enviar Mensagem Chat
+  const handleEnviarMensagem = (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
-    const userMsg = {
+    if (!novaMensagem.trim()) return;
+
+    const nova = {
       id: Date.now(),
-      sender: "user",
-      text: newMessage,
-      time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      remetente: 'usuario',
+      texto: novaMensagem
     };
-    setMessages((prev) => [...prev, userMsg]);
-    setNewMessage("");
-    setTimeout(() => {
-      const autoResponse = {
-        id: Date.now() + 1,
-        sender: "system",
-        text: "Agradecemos sua mensagem! A equipe da UBS Centro responderá em breve.",
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      };
-      setMessages((prev) => [...prev, autoResponse]);
-    }, 1200);
+
+    setMensagens((prev) => [...prev, nova]);
+    setNovaMensagem('');
+
+    if (userRole === 'cidadao') {
+      setTimeout(() => {
+        const respostaAuto = {
+          id: Date.now() + 1,
+          remetente: 'ubs',
+          texto: `Olá ${userName || 'Maria'}! Sua mensagem foi recebida pela equipe da ${formAgendamento.unidade}. Em breve retornaremos com a resposta.`
+        };
+        setMensagens((prev) => [...prev, respostaAuto]);
+      }, 1000);
+    }
   };
 
-  const handleDownloadPDF = (exameNome) => {
-    const element = document.createElement("a");
-    const file = new Blob([`MEDTECH BARRA MANSA - LAUDO DIGITAL\nExame: ${exameNome}\nPaciente: Maria da Silva\nStatus: Aprovado`], { type: "text/plain" });
-    element.href = URL.createObjectURL(file);
-    element.download = `${exameNome.toLowerCase().replace(/ /g, "_")}_laudo.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+  // Aprovar/Recusar Agendamento no Posto
+  const handleAlterarStatusAgendamento = (id, novoStatus) => {
+    setAgendamentos(agendamentos.map(a => a.id === id ? { ...a, status: novoStatus } : a));
   };
 
-  // --- HOME ---
-  if (currentPage === "home") {
-    return (
-      <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-        <header className="bg-[#005BAE] text-white sticky top-0 z-40 shadow-md">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex justify-between items-center">
-            <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setCurrentPage("home")}>
-              <div className="bg-white p-2 rounded-lg shadow-inner">
-                <HeartPulse className="text-[#005BAE]" size={28} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-black tracking-tight flex items-center">
-                  <span>Med</span><span className="text-[#28A745]">Tech</span>
-                </h1>
-                <p className="text-xs text-blue-200 uppercase tracking-widest font-semibold">Barra Mansa • RJ</p>
-              </div>
-            </div>
+  // Simulação de Download de PDF
+  const handleDownloadPDF = (exameNome, localColeta) => {
+    const conteudo = `PREFEITURA MUNICIPAL DE BARRA MANSA\nSECRETARIA MUNICIPAL DE SAÚDE\nSYSTEM MEDTECH BARRA MANSA\n\n--------------------------------------------\nLAUDO DIGITAL DE EXAME DE LABORATÓRIO/IMAGEM\n--------------------------------------------\n\nPaciente: ${userName || 'Maria da Silva'}\nCPF: ${cpf || '000.000.000-00'}\nExame: ${exameNome}\nLocal de Coleta: ${localColeta}\nData de Emissão: ${new Date().toLocaleDateString('pt-BR')}\nStatus: Laudo Validado e Autenticado Digitalmente pelo SUS Barra Mansa.\n\nResultado: Parâmetros e índices laboratoriais dentro da normalidade de referência.\n\nDocumento gerado eletronicamente via Portal MedTech Barra Mansa.`;
+    
+    const blob = new Blob([conteudo], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Laudo_${exameNome.replace(/ /g, '_')}_BarraMansa.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
-            <div className="hidden md:flex items-center space-x-8 text-sm font-medium">
-              <a href="#unidades" className="hover:text-blue-200 transition">Postos de Saúde</a>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setCurrentPage("login")}
-                className="bg-white text-[#005BAE] hover:bg-blue-50 font-bold px-5 py-2.5 rounded-lg text-sm shadow transition duration-200"
-              >
-                Entrar no Portal
-              </button>
-              <button
-                onClick={() => setCurrentPage("login-gov")}
-                className="bg-[#1351B4] border border-blue-400 hover:bg-[#0c3c88] text-white font-bold px-4 py-2.5 rounded-lg text-sm shadow flex items-center space-x-2 transition"
-              >
-                <span className="bg-yellow-400 text-blue-900 font-extrabold text-[10px] px-1.5 py-0.5 rounded">gov.br</span>
-                <span>Acessar</span>
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <section className="bg-gradient-to-r from-[#005BAE] via-[#00488B] to-[#003466] text-white py-16 md:py-24 relative overflow-hidden">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <span className="bg-blue-500/30 text-blue-100 text-xs font-semibold px-3 py-1 rounded-full border border-blue-300/20 inline-block mb-4">
-                Portal Oficial de Saúde Digital
-              </span>
-              <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6 leading-tight">
-                Sua saúde em Barra Mansa na palma da mão
-              </h2>
-              <p className="text-lg text-blue-100 mb-8 leading-relaxed">
-                Agende consultas médicas, acesse resultados de exames laboratoriais e acompanhe seu histórico no SUS de forma simples, rápida e digital.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={() => setCurrentPage("login")}
-                  className="bg-[#28A745] hover:bg-green-600 text-white font-bold px-8 py-4 rounded-xl shadow-lg transition text-center flex items-center justify-center space-x-2"
-                >
-                  <span>Agendar Consulta</span>
-                  <ChevronRight size={20} />
-                </button>
-                <button
-                  onClick={() => setCurrentPage("login-gov")}
-                  className="bg-white/10 hover:bg-white/20 text-white border border-white/20 font-semibold px-6 py-4 rounded-xl transition text-center"
-                >
-                  Entrar com Gov.br
-                </button>
-              </div>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-8 rounded-2xl shadow-2xl space-y-6">
-              <div className="flex items-center space-x-4 border-b border-white/10 pb-4">
-                <div className="bg-blue-500/20 p-3 rounded-lg text-green-400">
-                  <Calendar size={24} />
-                </div>
-                <div>
-                  <h4 className="font-bold">Agendamento Fácil</h4>
-                  <p className="text-sm text-blue-200">Escolha a unidade mais próxima no município</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4 border-b border-white/10 pb-4">
-                <div className="bg-blue-500/20 p-3 rounded-lg text-green-400">
-                  <FileText size={24} />
-                </div>
-                <div>
-                  <h4 className="font-bold">Resultados Digitais</h4>
-                  <p className="text-sm text-blue-200">Baixe exames sem precisar sair de casa</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <div className="bg-blue-500/20 p-3 rounded-lg text-green-400">
-                  <ShieldCheck size={24} />
-                </div>
-                <div>
-                  <h4 className="font-bold">Segurança Integrada</h4>
-                  <p className="text-sm text-blue-200">Autenticação oficial do Governo Federal</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="unidades" className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h3 className="text-2xl font-bold text-gray-900 mb-8 text-center">Unidades de Saúde em Barra Mansa</h3>
-          <div className="grid md:grid-cols-4 gap-6">
-            {unidadesBarraMansa.slice(0, 4).map((unidade, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition">
-                <Building2 className="text-[#005BAE] mb-3" size={28} />
-                <h4 className="font-bold text-gray-800 mb-2">{unidade}</h4>
-                <span className="text-xs bg-green-100 text-green-800 font-semibold px-2.5 py-1 rounded-full">Atendimento SUS</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <footer className="bg-slate-900 text-slate-400 py-8 text-center text-sm mt-auto border-t border-slate-800">
-          <p>© 2026 MedTech Barra Mansa - Sistema Único de Saúde (SUS)</p>
-        </footer>
-      </div>
-    );
-  }
-
-  // --- LOGIN TRADICIONAL ---
-  if (currentPage === "login") {
-    return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
-          <div className="text-center mb-8">
-            <div className="inline-flex bg-blue-50 p-3 rounded-xl mb-3">
-              <HeartPulse className="text-[#005BAE]" size={36} />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900">Acessar Portal MedTech</h2>
-            <p className="text-sm text-gray-500 mt-1">Prefeitura Municipal de Barra Mansa</p>
-          </div>
-
-          {loginError && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-200">
-              {loginError}
-            </div>
-          )}
-
-          <form onSubmit={handleTraditionalLogin} className="space-y-5">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">CPF do Cidadão</label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 text-gray-400" size={18} />
-                <input
-                  type="text"
-                  placeholder="000.000.000-00"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#005BAE] outline-none"
-                  value={loginForm.cpf}
-                  onChange={(e) => setLoginForm({ ...loginForm, cpf: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1">Senha de Acesso</label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#005BAE] outline-none"
-                  value={loginForm.senha}
-                  onChange={(e) => setLoginForm({ ...loginForm, senha: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-[#005BAE] hover:bg-[#00488B] text-white font-bold py-3 rounded-lg shadow-md transition"
-            >
-              Entrar no Sistema
-            </button>
-          </form>
-
-          <div className="mt-6 pt-6 border-t border-gray-100 text-center space-y-3">
-            <button
-              onClick={() => setCurrentPage("login-gov")}
-              className="w-full bg-[#1351B4] text-white font-semibold py-2.5 rounded-lg text-sm flex items-center justify-center space-x-2"
-            >
-              <span className="bg-yellow-400 text-blue-900 font-extrabold text-[10px] px-1.5 py-0.5 rounded">gov.br</span>
-              <span>Entrar com Gov.br</span>
-            </button>
-
-            <button
-              onClick={() => setCurrentPage("home")}
-              className="text-xs text-gray-500 hover:text-gray-700 font-medium block mx-auto mt-2"
-            >
-              ← Voltar para a página inicial
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // --- LOGIN GOV.BR ---
-  if (currentPage === "login-gov") {
-    return (
-      <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-2xl p-8 border border-blue-100">
-          <div className="flex justify-between items-center mb-6 pb-4 border-b">
-            <span className="bg-[#1351B4] text-white font-extrabold text-sm px-3 py-1 rounded">gov.br</span>
-            <span className="text-xs text-gray-400">Barra Mansa Digital</span>
-          </div>
-
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Identifique-se no gov.br</h2>
-          <p className="text-xs text-gray-500 mb-6">Digite seu CPF para acessar o MedTech BM</p>
-
-          {loginError && (
-            <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4">
-              {loginError}
-            </div>
-          )}
-
-          {govStep === 1 ? (
-            <form onSubmit={handleGovNextStep} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Número do CPF</label>
-                <input
-                  type="text"
-                  placeholder="000.000.000-00"
-                  className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
-                  value={govCpf}
-                  onChange={(e) => setGovCpf(e.target.value)}
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-[#1351B4] hover:bg-[#0c3c88] text-white font-bold py-3 rounded-lg transition"
-              >
-                Continuar
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleGovSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1">Senha gov.br</label>
-                <input
-                  type="password"
-                  placeholder="Digite sua senha"
-                  className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-600 outline-none"
-                  value={govPassword}
-                  onChange={(e) => setGovPassword(e.target.value)}
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-[#28A745] hover:bg-green-600 text-white font-bold py-3 rounded-lg transition"
-              >
-                Entrar
-              </button>
-            </form>
-          )}
-
-          <button
-            onClick={() => setCurrentPage("home")}
-            className="text-xs text-gray-500 hover:text-gray-700 font-medium block mx-auto mt-6"
-          >
-            ← Cancelar e Voltar
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // --- DASHBOARD DO PACIENTE ---
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
-      <header className="bg-[#005BAE] text-white shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex justify-between items-center">
-          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setCurrentPage("home")}>
-            <HeartPulse size={24} />
-            <h1 className="text-xl font-black">MedTech BM</h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <span className="text-sm font-medium">Olá, {user.name}</span>
-            <button
-              onClick={handleLogout}
-              className="bg-blue-800 hover:bg-blue-900 p-2 rounded-lg text-white transition"
-              title="Sair"
-            >
-              <LogOut size={18} />
-            </button>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col">
+      {/* ========================================================= */}
+      {/* 1. TELA HOME (ESCURA - IDENTIDADE MEDTECH BM)              */}
+      {/* ========================================================= */}
+      {currentView === 'home' && (
+        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-slate-900 text-white relative overflow-hidden">
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="z-10 flex flex-col items-center text-center max-w-3xl w-full">
+            {/* Logo Estetoscópio M */}
+            <div className="flex items-center justify-center mb-4">
+              <div className="relative flex items-center justify-center w-20 h-20 rounded-2xl bg-slate-800 border border-slate-700 shadow-2xl">
+                <svg className="w-12 h-12" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 48V20C12 16 15 12 20 12C24 12 26 15 28 19L32 28L36 19C38 15 40 12 44 12C49 12 52 16 52 20V34" stroke="#0080FF" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 48C12 52 16 54 20 54C24 54 28 50 28 44V28" stroke="#28A745" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="52" cy="42" r="6" stroke="#28A745" strokeWidth="4" fill="#0f172a"/>
+                </svg>
+              </div>
+            </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
-        <div className="flex border-b border-gray-200 mb-6 space-x-4">
-          <button
-            onClick={() => setActiveTab("agendar")}
-            className={`pb-3 px-4 font-semibold text-sm flex items-center space-x-2 border-b-2 transition ${
-              activeTab === "agendar" ? "border-[#005BAE] text-[#005BAE]" : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <Calendar size={18} />
-            <span>Consultas e Agendamento</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("exames")}
-            className={`pb-3 px-4 font-semibold text-sm flex items-center space-x-2 border-b-2 transition ${
-              activeTab === "exames" ? "border-[#005BAE] text-[#005BAE]" : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <FileText size={18} />
-            <span>Resultados de Exames</span>
-          </button>
-          <button
-            onClick={() => setActiveTab("mensagens")}
-            className={`pb-3 px-4 font-semibold text-sm flex items-center space-x-2 border-b-2 transition ${
-              activeTab === "mensagens" ? "border-[#005BAE] text-[#005BAE]" : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <MessageSquare size={18} />
-            <span>Fale com a UBS</span>
-          </button>
-        </div>
+            <div className="flex items-center text-4xl sm:text-5xl font-black tracking-tight mb-2">
+              <span className="text-[#0080FF]">Med</span>
+              <span className="text-[#28A745]">Tech</span>
+              <span className="text-[#0080FF] ml-2 text-3xl sm:text-4xl font-extrabold">BM</span>
+            </div>
 
-        {/* ABA AGENDAR: MANTIDA 100% INTATCA */}
-        {activeTab === "agendar" && (
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Novo Agendamento SUS</h3>
+            <p className="text-slate-400 text-sm sm:text-base mb-10 font-medium max-w-lg">
+              Sistema Unificado de Agendamentos e Exames - Barra Mansa
+            </p>
 
-              {showAgendamentoSuccess && (
-                <div className="bg-green-50 text-green-700 p-4 rounded-xl mb-6 flex items-center space-x-3 border border-green-200">
-                  <CircleCheck size={24} />
-                  <div>
-                    <h4 className="font-bold">Agendamento Realizado!</h4>
-                    <p className="text-xs">Sua solicitação foi salva com sucesso no sistema da Prefeitura.</p>
-                  </div>
-                </div>
-              )}
+            <h2 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6">
+              COMO DESEJA ACESSAR O SISTEMA?
+            </h2>
 
-              <form onSubmit={handleAgendarSubmit} className="space-y-4">
+            {/* Cards de Seleção de Perfil */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
+              {/* Card Cidadão */}
+              <div 
+                onClick={() => {
+                  setUserRole('cidadao');
+                  setCurrentView('login');
+                }}
+                className="group bg-slate-800/80 hover:bg-slate-800 border border-blue-500/30 hover:border-blue-500 rounded-2xl p-6 transition-all duration-300 cursor-pointer text-left shadow-xl flex flex-col justify-between"
+              >
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Tipo de Atendimento</label>
-                  <select
-                    className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-[#005BAE] outline-none"
-                    value={formData.tipo}
-                    onChange={(e) => setFormData({ ...formData, tipo: e.target.value })}
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-4 border border-blue-500/20 group-hover:scale-110 transition-transform">
+                    <User className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Portal do Cidadão</h3>
+                  <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-6">
+                    Para usuários do SUS solicitar agendamentos de exames/consultas, ver filas e acessar laudos.
+                  </p>
+                </div>
+                <button className="w-full py-3 px-4 rounded-xl bg-[#005BAE] hover:bg-blue-600 text-white font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2 shadow-lg">
+                  ACESSAR COMO CIDADÃO
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Card Posto de Saúde */}
+              <div 
+                onClick={() => {
+                  setUserRole('posto');
+                  setCurrentView('login');
+                }}
+                className="group bg-slate-800/80 hover:bg-slate-800 border border-emerald-500/30 hover:border-emerald-500 rounded-2xl p-6 transition-all duration-300 cursor-pointer text-left shadow-xl flex flex-col justify-between"
+              >
+                <div>
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-4 border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                    <Building2 className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2">Postos de Saúde</h3>
+                  <p className="text-slate-400 text-xs sm:text-sm leading-relaxed mb-6">
+                    Acesso administrativo para gestão dos postos de Barra Mansa, aprovação de vagas e envio de laudos.
+                  </p>
+                </div>
+                <button className="w-full py-3 px-4 rounded-xl bg-[#28A745] hover:bg-emerald-600 text-white font-bold text-xs sm:text-sm transition-colors flex items-center justify-center gap-2 shadow-lg">
+                  ACESSAR COMO POSTO DE SAÚDE
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 2. TELA DE LOGIN                                         */}
+      {/* ========================================================= */}
+      {currentView === 'login' && (
+        <div className="flex-1 bg-slate-100 flex flex-col">
+          <header className="bg-[#005BAE] text-white px-8 py-4 flex items-center justify-between shadow-md">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold tracking-tight">
+                Med<span className="text-[#28A745]">Tech</span>
+              </span>
+              <span className="text-xs border-l border-blue-400 pl-2 text-blue-100">
+                Barra Mansa
+              </span>
+            </div>
+
+            <button 
+              onClick={() => setCurrentView('home')} 
+              className="text-xs text-blue-100 hover:text-white flex items-center gap-1 font-medium transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Voltar para Home
+            </button>
+          </header>
+
+          <div className="flex-1 flex items-center justify-center p-4">
+            {loginMethod === 'traditional' ? (
+              <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-slate-200/80 p-8 sm:p-10 space-y-6">
+                <h2 className="text-xl sm:text-2xl font-bold text-[#005BAE] text-left">
+                  {userRole === 'cidadao' ? 'Acesso ao Portal do Cidadão' : 'Acesso do Posto de Saúde'}
+                </h2>
+
+                <form onSubmit={handleLogin} className="space-y-5">
+                  {userRole === 'cidadao' ? (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 uppercase mb-2">
+                        CPF ou Cartão SUS
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="000.000.000-00"
+                        value={cpf}
+                        onChange={(e) => setCpf(e.target.value)}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005BAE] text-sm"
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 uppercase mb-2">
+                        Unidade de Saúde
+                      </label>
+                      <select
+                        value={unidadeSelecionada}
+                        onChange={(e) => setUnidadeSelecionada(e.target.value)}
+                        className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 text-sm"
+                      >
+                        {postosBarraMansa.map((p, idx) => (
+                          <option key={idx} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 uppercase mb-2">
+                      Senha de Acesso
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="•••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full px-4 py-3 border border-slate-300 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#005BAE] text-sm"
+                    />
+                  </div>
+
+                  <div className="bg-[#EBF9F1] border border-emerald-200/60 rounded-xl p-3.5 text-xs text-[#1E7E34] flex items-start gap-2.5">
+                    <Lock className="w-4 h-4 text-[#28A745] shrink-0 mt-0.5" />
+                    <span className="leading-relaxed">
+                      <strong>Conformidade LGPD:</strong> Seus dados são protegidos segundo a Lei nº 13.709/2018.
+                    </span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className={`w-full py-3.5 ${userRole === 'cidadao' ? 'bg-[#005BAE] hover:bg-blue-700' : 'bg-[#28A745] hover:bg-emerald-700'} text-white font-bold rounded-xl text-sm tracking-wide transition-colors shadow-sm uppercase`}
                   >
-                    <option value="Consulta Médica">Consulta Médica</option>
-                    <option value="Exame Laboratorial">Exame Laboratorial</option>
-                    <option value="Vacinação">Vacinação</option>
-                  </select>
+                    ENTRAR NO SISTEMA
+                  </button>
+                </form>
+
+                {userRole === 'cidadao' && (
+                  <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentView('cadastro')}
+                      className="text-[#005BAE] font-bold hover:underline flex items-center gap-1"
+                    >
+                      <UserPlus className="w-4 h-4" /> Primeiro acesso? Cadastre-se
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => setLoginMethod('gov')}
+                      className="text-slate-500 hover:text-[#005BAE] font-medium transition-colors"
+                    >
+                      Entrar com <strong className="text-[#1351B4]">gov.br</strong>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="w-full max-w-md bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
+                <div className="bg-[#1351B4] p-5 text-white flex items-center justify-between">
+                  <span className="text-2xl font-black tracking-tight">gov.br</span>
+                  <span className="text-xs bg-blue-900/40 px-2.5 py-1 rounded-full border border-blue-300/30">
+                    Autenticação Digital
+                  </span>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-6">
+                  {govStep === 1 ? (
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-bold text-slate-800">
+                        Identifique-se no gov.br com seu CPF
+                      </h3>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">
+                          Seu Nome Completo
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ex: Maria da Silva"
+                          value={userName}
+                          onChange={(e) => setUserName(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-[#1351B4] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">
+                          Número do CPF
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="000.000.000-00"
+                          value={cpf}
+                          onChange={(e) => setCpf(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-[#1351B4] outline-none"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setGovStep(2)}
+                        className="w-full py-3 bg-[#1351B4] hover:bg-blue-800 text-white font-bold rounded-lg text-sm transition-colors"
+                      >
+                        Continuar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-600">
+                        Entrando como: <strong className="text-slate-900">{userName || 'Maria da Silva'}</strong> ({cpf || '000.000.000-00'})
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1">
+                          Digite sua senha do gov.br
+                        </label>
+                        <input
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 focus:ring-2 focus:ring-[#1351B4] outline-none"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleLogin}
+                        className="w-full py-3 bg-[#1351B4] hover:bg-blue-800 text-white font-bold rounded-lg text-sm transition-colors shadow-md"
+                      >
+                        Entrar no Sistema
+                      </button>
+                    </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setLoginMethod('traditional')}
+                    className="w-full text-center text-xs text-slate-500 hover:text-slate-800 mt-6 underline block"
+                  >
+                    Voltar para o login tradicional
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 3. TELA DE CADASTRO DO CIDADÃO                            */}
+      {/* ========================================================= */}
+      {currentView === 'cadastro' && (
+        <div className="flex-1 bg-slate-100 flex flex-col">
+          <header className="bg-[#005BAE] text-white px-8 py-4 flex items-center justify-between shadow-md">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold tracking-tight">
+                Med<span className="text-[#28A745]">Tech</span>
+              </span>
+              <span className="text-xs border-l border-blue-400 pl-2 text-blue-100">
+                Barra Mansa
+              </span>
+            </div>
+
+            <button 
+              onClick={() => setCurrentView('login')} 
+              className="text-xs text-blue-100 hover:text-white flex items-center gap-1 font-medium transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> Já tenho conta
+            </button>
+          </header>
+
+          <div className="flex-1 flex items-center justify-center p-4">
+            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-sm border border-slate-200/80 p-8 sm:p-10 space-y-6">
+              <div className="border-b border-slate-100 pb-4">
+                <h2 className="text-2xl font-bold text-[#005BAE]">Cadastro no Portal do Cidadão</h2>
+                <p className="text-xs text-slate-500 mt-1">Preencha seus dados para solicitar agendamentos no SUS Barra Mansa</p>
+              </div>
+
+              <form onSubmit={handleCadastro} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Especialidade</label>
-                    <select
-                      className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-[#005BAE] outline-none"
-                      value={formData.especialidade}
-                      onChange={(e) => setFormData({ ...formData, especialidade: e.target.value })}
-                    >
-                      <option value="Clínica Geral">Clínica Geral</option>
-                      <option value="Pediatria">Pediatria</option>
-                      <option value="Odontologia">Odontologia</option>
-                      <option value="Ginecologia">Ginecologia</option>
-                    </select>
+                    <label className="block text-xs font-bold text-slate-800 uppercase mb-1">
+                      Nome Completo
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Seu nome completo"
+                      value={formCadastro.nome}
+                      onChange={(e) => setFormCadastro({ ...formCadastro, nome: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
+                    />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">Data Pretendida</label>
+                    <label className="block text-xs font-bold text-slate-800 uppercase mb-1">
+                      CPF
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="000.000.000-00"
+                      value={formCadastro.cpf}
+                      onChange={(e) => setFormCadastro({ ...formCadastro, cpf: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 uppercase mb-1">
+                      Cartão do SUS
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="000 0000 0000 0000"
+                      value={formCadastro.cartaoSus}
+                      onChange={(e) => setFormCadastro({ ...formCadastro, cartaoSus: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 uppercase mb-1">
+                      Data de Nascimento
+                    </label>
                     <input
                       type="date"
-                      className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-[#005BAE] outline-none"
-                      value={formData.data}
-                      onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+                      required
+                      value={formCadastro.dataNascimento}
+                      onChange={(e) => setFormCadastro({ ...formCadastro, dataNascimento: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1">Unidade de Saúde (Barra Mansa)</label>
+                  <label className="block text-xs font-bold text-slate-800 uppercase mb-1">
+                    Bairro de Residência (Barra Mansa)
+                  </label>
                   <select
-                    className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-[#005BAE] outline-none"
-                    value={formData.unidade}
-                    onChange={(e) => setFormData({ ...formData, unidade: e.target.value })}
+                    value={formCadastro.bairro}
+                    onChange={(e) => setFormCadastro({ ...formCadastro, bairro: e.target.value })}
+                    className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
                   >
-                    {unidadesBarraMansa.map((u, i) => (
-                      <option key={i} value={u}>{u}</option>
+                    {bairrosBarraMansa.map((b, idx) => (
+                      <option key={idx} value={b}>{b}</option>
                     ))}
                   </select>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 uppercase mb-1">
+                      Criar Senha
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      value={formCadastro.senha}
+                      onChange={(e) => setFormCadastro({ ...formCadastro, senha: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-800 uppercase mb-1">
+                      Confirmar Senha
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      value={formCadastro.confirmarSenha}
+                      onChange={(e) => setFormCadastro({ ...formCadastro, confirmarSenha: e.target.value })}
+                      className="w-full px-3.5 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
+                    />
+                  </div>
+                </div>
+
+                <div className="bg-[#EBF9F1] border border-emerald-200/60 rounded-xl p-3.5 text-xs text-[#1E7E34] flex items-start gap-2.5 mt-2">
+                  <Lock className="w-4 h-4 text-[#28A745] shrink-0 mt-0.5" />
+                  <span>
+                    Ao se cadastrar, você concorda com o tratamento de dados pessoais de acordo com a LGPD (Lei nº 13.709/2018) para fins de gestão pública de saúde em Barra Mansa.
+                  </span>
+                </div>
+
                 <button
                   type="submit"
-                  className="w-full bg-[#28A745] hover:bg-green-600 text-white font-bold py-3 rounded-lg shadow transition"
+                  className="w-full py-3.5 bg-[#28A745] hover:bg-emerald-600 text-white font-bold rounded-xl text-sm tracking-wide transition-colors shadow-sm uppercase mt-4"
                 >
-                  Confirmar Solicitação de Consulta
+                  CONCLUIR CADASTRO
                 </button>
               </form>
             </div>
-
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-              <h3 className="text-lg font-bold text-gray-800 mb-4">Meus Agendamentos</h3>
-              <div className="space-y-4">
-                {agendamentos.map((item) => (
-                  <div key={item.id} className="p-4 rounded-xl border border-gray-100 bg-slate-50 space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="font-bold text-sm text-[#005BAE]">{item.especialidade}</span>
-                      <span className="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded">{item.status}</span>
-                    </div>
-                    <p className="text-xs text-gray-600">{item.unidade}</p>
-                    <p className="text-xs font-semibold text-gray-700">Data: {item.data}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {activeTab === "exames" && (
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-            <h3 className="text-lg font-bold text-gray-800 mb-6">Resultados de Exames Laboratoriais</h3>
-            <div className="space-y-4">
-              {exames.map((exame) => (
-                <div key={exame.id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 border border-gray-100 rounded-xl bg-slate-50 gap-4">
-                  <div>
-                    <h4 className="font-bold text-gray-800">{exame.exame}</h4>
-                    <p className="text-xs text-gray-500">{exame.local} • Realizado em {exame.data}</p>
-                  </div>
-                  <button
-                    onClick={() => handleDownloadPDF(exame.exame)}
-                    className="bg-[#005BAE] hover:bg-[#00488B] text-white text-xs font-bold px-4 py-2.5 rounded-lg flex items-center space-x-2 transition"
-                  >
-                    <Download size={14} />
-                    <span>Baixar Laudo PDF</span>
-                  </button>
-                </div>
-              ))}
+      {/* ========================================================= */}
+      {/* 4. PAINEL DO CIDADÃO                                      */}
+      {/* ========================================================= */}
+      {currentView === 'dashboard-cidadao' && (
+        <div className="flex-1 bg-white text-slate-800 flex flex-col">
+          <header className="bg-[#005BAE] text-white px-8 py-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold tracking-tight">
+                Med<span className="text-[#28A745]">Tech</span>
+              </span>
+              <span className="text-xs border-l border-blue-400 pl-2 text-blue-100">
+                Barra Mansa
+              </span>
             </div>
-          </div>
-        )}
 
-        {activeTab === "mensagens" && (
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 max-w-3xl mx-auto flex flex-col h-[500px]">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 pb-2 border-b">Atendimento Digital UBS</h3>
-            <div className="flex-1 overflow-y-auto space-y-4 p-2">
-              {messages.map((m) => (
-                <div key={m.id} className={`flex ${m.sender === "user" ? "justify-end" : "justify-start"}`}>
-                  <div className={`max-w-xs sm:max-w-md p-3 rounded-2xl text-sm ${
-                    m.sender === "user" ? "bg-[#005BAE] text-white rounded-tr-none" : "bg-slate-100 text-gray-800 rounded-tl-none"
-                  }`}>
-                    <p>{m.text}</p>
-                    <span className={`text-[10px] block mt-1 ${m.sender === "user" ? "text-blue-200" : "text-gray-400"}`}>{m.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <form onSubmit={handleSendMessage} className="flex gap-2 pt-4 border-t mt-2">
-              <input
-                type="text"
-                placeholder="Digite sua dúvida para a equipe médica..."
-                className="flex-1 border border-gray-300 p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-[#005BAE] outline-none"
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-              />
-              <button type="submit" className="bg-[#005BAE] text-white p-2.5 rounded-lg hover:bg-[#00488B]">
-                <Send size={18} />
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <span>{userName || 'Maria da Silva'}</span>
+              <span className="text-blue-200">|</span>
+              <button
+                onClick={() => setCurrentView('home')}
+                className="hover:underline text-white font-normal"
+              >
+                Sair
               </button>
-            </form>
+            </div>
+          </header>
+
+          <div className="flex-1 flex flex-col md:flex-row">
+            {/* Sidebar */}
+            <aside className="w-full md:w-64 bg-[#F8FAFC] border-r border-slate-200/80 p-4 space-y-1 shrink-0">
+              <button
+                onClick={() => setActiveTabCidadao('meus-agendamentos')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-all rounded-r-md ${
+                  activeTabCidadao === 'meus-agendamentos'
+                    ? 'bg-[#005BAE] text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <Calendar className="w-4 h-4" /> Meus Agendamentos
+              </button>
+
+              <button
+                onClick={() => setActiveTabCidadao('agendar')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-all rounded-r-md ${
+                  activeTabCidadao === 'agendar'
+                    ? 'bg-[#005BAE] text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <PlusCircle className="w-4 h-4" /> Solicitar Agendamento
+              </button>
+
+              <button
+                onClick={() => setActiveTabCidadao('exames')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-all rounded-r-md ${
+                  activeTabCidadao === 'exames'
+                    ? 'bg-[#005BAE] text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <FileText className="w-4 h-4" /> Laudos & Exames
+              </button>
+
+              <button
+                onClick={() => setActiveTabCidadao('chat')}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold transition-all rounded-r-md ${
+                  activeTabCidadao === 'chat'
+                    ? 'bg-[#005BAE] text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" /> Atendimento Digital
+              </button>
+            </aside>
+
+            {/* Conteúdo Principal */}
+            <main className="flex-1 p-6 md:p-10">
+              {/* ABA 1: MEUS AGENDAMENTOS */}
+              {activeTabCidadao === 'meus-agendamentos' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">Meus Agendamentos no SUS</h2>
+                    <p className="text-xs text-slate-500 mt-1">Acompanhe o status das suas solicitações</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {agendamentos.map((item) => (
+                      <div key={item.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="space-y-1">
+                          <span className="text-xs font-bold uppercase tracking-wider text-blue-600">{item.tipo}</span>
+                          <h4 className="text-lg font-bold text-slate-800">{item.especialidade}</h4>
+                          <p className="text-xs text-slate-500">{item.unidade} • Data: <strong className="text-slate-700">{item.data}</strong></p>
+                        </div>
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                          item.status === 'Confirmado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                        }`}>
+                          {item.status}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ABA 2: AGENDAR */}
+              {activeTabCidadao === 'agendar' && (
+                <div className="max-w-2xl bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-800">Novo Agendamento de Consulta ou Exame</h2>
+                    <p className="text-xs text-slate-500 mt-1">Selecione o tipo de atendimento e o posto em Barra Mansa</p>
+                  </div>
+
+                  <form onSubmit={handleAgendar} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo de Atendimento</label>
+                      <select
+                        value={formAgendamento.tipo}
+                        onChange={(e) => setFormAgendamento({ ...formAgendamento, tipo: e.target.value })}
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
+                      >
+                        <option value="Consulta Médica">Consulta Médica</option>
+                        <option value="Exame Laboratorial">Exame Laboratorial</option>
+                        <option value="Vacinação">Vacinação</option>
+                      </select>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Especialidade / Exame</label>
+                        <select
+                          value={formAgendamento.especialidade}
+                          onChange={(e) => setFormAgendamento({ ...formAgendamento, especialidade: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
+                        >
+                          <option value="Clínica Geral">Clínica Geral</option>
+                          <option value="Pediatria">Pediatria</option>
+                          <option value="Odontologia">Odontologia</option>
+                          <option value="Hemograma Completo">Hemograma Completo</option>
+                          <option value="Raio-X Toráxico">Raio-X Toráxico</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Data Pretendida</label>
+                        <input
+                          type="date"
+                          value={formAgendamento.data}
+                          onChange={(e) => setFormAgendamento({ ...formAgendamento, data: e.target.value })}
+                          className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Posto / Unidade de Saúde</label>
+                      <select
+                        value={formAgendamento.unidade}
+                        onChange={(e) => setFormAgendamento({ ...formAgendamento, unidade: e.target.value })}
+                        className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
+                      >
+                        {postosBarraMansa.map((p, idx) => (
+                          <option key={idx} value={p}>{p}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-3.5 bg-[#28A745] hover:bg-emerald-600 text-white font-bold rounded-xl text-sm transition-colors shadow-sm uppercase mt-4"
+                    >
+                      SOLICITAR AGENDAMENTO
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* ABA 3: EXAMES */}
+              {activeTabCidadao === 'exames' && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-800">Resultados e Laudos Digitais</h2>
+                    <p className="text-xs text-slate-500 mt-1">Baixe os exames em PDF autenticados pela Prefeitura</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {exames.map((ex) => (
+                      <div key={ex.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="space-y-1">
+                          <h4 className="text-lg font-bold text-slate-800">{ex.exame}</h4>
+                          <p className="text-xs text-slate-500">{ex.local} • Realizado em {ex.data}</p>
+                        </div>
+                        <button
+                          onClick={() => handleDownloadPDF(ex.exame, ex.local)}
+                          className="px-4 py-2 bg-[#005BAE] hover:bg-blue-700 text-white font-bold text-xs rounded-lg flex items-center gap-2 transition-colors shadow-sm"
+                        >
+                          <Download className="w-4 h-4" /> Baixar Laudo
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* ABA 4: CHAT */}
+              {activeTabCidadao === 'chat' && (
+                <div className="max-w-3xl bg-white border border-slate-200 rounded-2xl shadow-sm flex flex-col h-[500px]">
+                  <div className="p-4 border-b border-slate-200 bg-slate-50 rounded-t-2xl">
+                    <h3 className="font-bold text-slate-800 text-sm">Canal Direto com o Posto de Saúde</h3>
+                  </div>
+
+                  <div className="flex-1 p-4 overflow-y-auto space-y-3">
+                    {mensagens.map((m) => (
+                      <div key={m.id} className={`flex ${m.remetente === 'usuario' ? 'justify-end' : 'justify-start'}`}>
+                        <div className={`max-w-md p-3 rounded-xl text-sm ${
+                          m.remetente === 'usuario' ? 'bg-[#005BAE] text-white rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-tl-none'
+                        }`}>
+                          {m.texto}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <form onSubmit={handleEnviarMensagem} className="p-3 border-t border-slate-200 flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Digite sua mensagem..."
+                      value={novaMensagem}
+                      onChange={(e) => setNovaMensagem(e.target.value)}
+                      className="flex-1 px-4 py-2 border border-slate-300 rounded-lg text-sm text-slate-800 outline-none focus:ring-2 focus:ring-[#005BAE]"
+                    />
+                    <button type="submit" className="p-2.5 bg-[#005BAE] hover:bg-blue-700 text-white rounded-lg">
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </form>
+                </div>
+              )}
+            </main>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* 5. PAINEL DO POSTO DE SAÚDE                               */}
+      {/* ========================================================= */}
+      {currentView === 'dashboard-posto' && (
+        <div className="flex-1 bg-white text-slate-800 flex flex-col">
+          <header className="bg-[#28A745] text-white px-8 py-4 flex items-center justify-between shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold tracking-tight">
+                Med<span className="text-white">Tech</span> Admin
+              </span>
+              <span className="text-xs border-l border-emerald-300 pl-2 text-emerald-100">
+                {unidadeSelecionada}
+              </span>
+            </div>
+
+            <button
+              onClick={() => setCurrentView('home')}
+              className="text-xs hover:underline text-white font-medium"
+            >
+              Sair da Gestão
+            </button>
+          </header>
+
+          <main className="flex-1 p-6 md:p-10 space-y-6 max-w-6xl mx-auto w-full">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">Gestão de Vagas e Solicitacões</h2>
+              <p className="text-xs text-slate-500 mt-1">Aprove ou recuse os agendamentos da população de Barra Mansa</p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {agendamentos.map((item) => (
+                <div key={item.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="space-y-1">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">{item.tipo}</span>
+                    <h4 className="text-base font-bold text-slate-800">{item.paciente} ({item.cpf})</h4>
+                    <p className="text-xs text-slate-500">{item.especialidade} • Data: <strong>{item.data}</strong></p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {item.status === 'Solicitado' ? (
+                      <>
+                        <button
+                          onClick={() => handleAlterarStatusAgendamento(item.id, 'Confirmado')}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
+                        >
+                          <CheckCircle2 className="w-4 h-4" /> Aprovar
+                        </button>
+                        <button
+                          onClick={() => handleAlterarStatusAgendamento(item.id, 'Cancelado')}
+                          className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-lg flex items-center gap-1 shadow-sm"
+                        >
+                          <XCircle className="w-4 h-4" /> Recusar
+                        </button>
+                      </>
+                    ) : (
+                      <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+                        item.status === 'Confirmado' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {item.status}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </main>
+        </div>
+      )}
     </div>
   );
 }
